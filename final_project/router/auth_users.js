@@ -50,25 +50,22 @@ regd_users.post("/login", (req,res) => {
 
 // Add a book review
 regd_users.put("/auth/review/:isbn", (req, res) => {
-    const isbn = req.params.isbn;
-    let review = req.query.review; // Retrieve the review from query parameters
-    let sessionData = req.session.authorization;
-  
-    if (sessionData) {
-        let username = sessionData['username']; // Get the username from the session
-        
-        // Check if the book exists in the books data
-        if (books[isbn]) {
-            let book = books[isbn];
-            // Set the review for the specific user (adds new or overwrites existing)
-            book.reviews[username] = review;
-            return res.status(200).send(`The review for the book with ISBN ${isbn} has been added/updated.`);
-        } else {
-            return res.status(404).json({message: "Book not found"});
-        }
-    } else {
-        return res.status(403).json({message: "User not logged in"});
-    }
+  const isbn = req.params.isbn;
+  let review = req.query.review;
+  let username = req.session.authorization['username'];
+
+  if (books[isbn]) {
+      let book = books[isbn];
+      book.reviews[username] = review;
+      
+      // Message ရော၊ လက်ရှိ book ရဲ့ reviews list ရောကို JSON format နဲ့ ပြန်ပေးရပါမယ်
+      return res.status(200).json({ 
+          message: `The review for the book with ISBN ${isbn} has been added/updated.`,
+          reviews: book.reviews 
+      });
+  } else {
+      return res.status(404).json({message: "Book not found"});
+  }
 });
 
 // Delete a book review
@@ -78,14 +75,12 @@ regd_users.delete("/auth/review/:isbn", (req, res) => {
 
     if (books[isbn]) {
         let book = books[isbn];
-        
-        // Check if the user has a review for this book
         if (book.reviews[username]) {
-            // Delete the review associated with the session username
             delete book.reviews[username];
-            return res.status(200).send(`Reviews for the ISBN ${isbn} posted by the user ${username} deleted.`);
+            // string message အစား JSON object နဲ့ ပြန်ပေးပါ
+            return res.status(200).json({ message: `Review for ISBN ${isbn} deleted` });
         } else {
-            return res.status(404).json({ message: "No review found for this user on this book" });
+            return res.status(404).json({ message: "No review found" });
         }
     } else {
         return res.status(404).json({ message: "Book not found" });
